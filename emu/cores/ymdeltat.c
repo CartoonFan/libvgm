@@ -62,7 +62,6 @@
 **
 */
 
-#include <stdio.h>
 
 #include "../../stdtype.h"
 #include "../snddef.h"
@@ -216,7 +215,8 @@ value:   START, REC, MEMDAT, REPEAT, SPOFF, x,x,RESET   meaning:
 			DELTAT->adpcmd   = YM_DELTAT_DELTA_DEF;
 			DELTAT->now_data = 0;
 			if (DELTAT->start > DELTAT->end)
-				logerror("DeltaT-Warning: Start: %06X, End: %06X\n", DELTAT->start, DELTAT->end);
+				//logerror("DeltaT-Warning: Start: %06X, End: %06X\n", DELTAT->start, DELTAT->end);
+				logerror("DeltaT-Warning: Start: %06X, End: %06X, Limit %06X, MemMask %06X\n", DELTAT->start, DELTAT->end, DELTAT->limit, DELTAT->memory_mask);
 		}
 
 		if( DELTAT->portstate&0x20 ) /* do we access external memory? */
@@ -227,9 +227,7 @@ value:   START, REC, MEMDAT, REPEAT, SPOFF, x,x,RESET   meaning:
 			/* if yes, then let's check if ADPCM memory is mapped and big enough */
 			if(DELTAT->memory == NULL)
 			{
-#ifdef _DEBUG
 				logerror("YM Delta-T ADPCM rom not mapped\n");
-#endif
 				DELTAT->portstate = 0x00;
 				DELTAT->PCM_BSY = 0;
 			}
@@ -237,16 +235,13 @@ value:   START, REC, MEMDAT, REPEAT, SPOFF, x,x,RESET   meaning:
 			{
 				if( (DELTAT->end & DELTAT->memory_mask) >= DELTAT->memory_size )	/* Check End in Range */
 				{
-#ifdef _DEBUG
-					logerror("YM Delta-T ADPCM end out of range: $%08x\n", DELTAT->end);
-#endif
+					//logerror("YM Delta-T ADPCM end out of range: $%08x\n", DELTAT->end);
+					logerror("YM Delta-T ADPCM end out of range: %06X >= %06X\n", DELTAT->end, DELTAT->memory_size);
 					DELTAT->end = (DELTAT->end & ~DELTAT->memory_mask) | (DELTAT->memory_size - 1);
 				}
 				if( (DELTAT->start & DELTAT->memory_mask) >= DELTAT->memory_size )	/* Check Start in Range */
 				{
-#ifdef _DEBUG
 					logerror("YM Delta-T ADPCM start out of range: $%08x\n", DELTAT->start);
-#endif
 					DELTAT->portstate = 0x00;
 					DELTAT->PCM_BSY = 0;
 				}
@@ -409,8 +404,13 @@ value:   START, REC, MEMDAT, REPEAT, SPOFF, x,x,RESET   meaning:
 		break;
 	case 0x0c:	/* Limit Address L */
 	case 0x0d:	/* Limit Address H */
+		{
+		UINT32 oldLimit = DELTAT->limit;
 		DELTAT->limit  = (DELTAT->reg[0xd]*0x0100 | DELTAT->reg[0xc]) << DELTAT->now_portshift;
 		/*logerror("DELTAT limit: 0c=%2x 0d=%2x addr=%8x\n",DELTAT->reg[0xc], DELTAT->reg[0xd],DELTAT->limit );*/
+		if (oldLimit != DELTAT->limit)
+		  logerror("DELTAT limit: %02x=%02x addr=%06x\n",r, DELTAT->reg[r],DELTAT->limit );
+		}
 		break;
 	}
 }

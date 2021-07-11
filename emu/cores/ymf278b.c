@@ -94,7 +94,6 @@
 // in the MSXMoonSound class.
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <math.h>
 
@@ -138,6 +137,7 @@ static DEVDEF_RWFUNC devFunc[] =
 	{RWF_MEMORY | RWF_WRITE, DEVRW_MEMSIZE, 0x524F, ymf278b_alloc_rom},
 	{RWF_MEMORY | RWF_WRITE, DEVRW_BLOCK, 0x5241, ymf278b_write_ram},	// 0x5241 = 'RA' for RAM
 	{RWF_MEMORY | RWF_WRITE, DEVRW_MEMSIZE, 0x5241, ymf278b_alloc_ram},
+	{RWF_CHN_MUTE | RWF_WRITE, DEVRW_ALL, 0, ymf278b_set_mute_mask},
 	{0x00, 0x00, 0, NULL}
 };
 static DEV_DEF devDef =
@@ -712,9 +712,9 @@ INLINE INT16 ymf278b_getSample(YMF278BChip* chip, YMF278BSlot* op)
 		// 12 bit
 		addr = op->startaddr + ((op->pos / 2) * 3);
 		if (op->pos & 1)
-			sample = (ymf278b_readMem(chip, addr + 2) << 8) | ((ymf278b_readMem(chip, addr + 1) & 0x0F) << 4);
+			sample = (ymf278b_readMem(chip, addr + 2) << 8) | ((ymf278b_readMem(chip, addr + 1) & 0xF0) << 0);
 		else
-			sample = (ymf278b_readMem(chip, addr + 0) << 8) | ((ymf278b_readMem(chip, addr + 1) & 0xF0) << 0);
+			sample = (ymf278b_readMem(chip, addr + 0) << 8) | ((ymf278b_readMem(chip, addr + 1) & 0x0F) << 4);
 		break;
 	case 2:
 		// 16 bit
@@ -899,9 +899,6 @@ static void ymf278b_B_w(YMF278BChip *chip, UINT8 reg, UINT8 data)
 		default:
 			break;
 	}
-//#ifdef _DEBUG
-//	logerror("YMF278B:  Port B write %02x, %02x\n", reg, data);
-//#endif
 }
 
 static void ymf278b_C_w(YMF278BChip* chip, UINT8 reg, UINT8 data)
@@ -1222,9 +1219,7 @@ static void ymf278b_w(void *info, UINT8 offset, UINT8 data)
 			break;
 
 		default:
-#ifdef _DEBUG
 			logerror("YMF278B: unexpected write at offset %X to ymf278b = %02X\n", offset, data);
-#endif
 			break;
 	}
 }

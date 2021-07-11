@@ -48,7 +48,6 @@ Copyright(C)2006-2017 Kitao Nakamura.
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 ******************************************************************************/
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>	// for memset
 #include <math.h>
@@ -66,6 +65,7 @@ static DEVDEF_RWFUNC devFunc[] =
 {
 	{RWF_REGISTER | RWF_WRITE, DEVRW_A8D8, 0, OPSG_Write},
 	{RWF_REGISTER | RWF_READ, DEVRW_A8D8, 0, OPSG_Read},
+	{RWF_CHN_MUTE | RWF_WRITE, DEVRW_ALL, 0, OPSG_SetMuteMask},
 	{0x00, 0x00, 0, NULL}
 };
 DEV_DEF devDef_C6280_Ootake =

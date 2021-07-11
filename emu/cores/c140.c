@@ -51,6 +51,7 @@ static DEVDEF_RWFUNC devFunc[] =
 	{RWF_REGISTER | RWF_READ, DEVRW_A16D8, 0, c140_r},
 	{RWF_MEMORY | RWF_WRITE, DEVRW_BLOCK, 0, c140_write_rom},
 	{RWF_MEMORY | RWF_WRITE, DEVRW_MEMSIZE, 0, c140_alloc_rom},
+	{RWF_CHN_MUTE | RWF_WRITE, DEVRW_ALL, 0, c140_set_mute_mask},
 	{0x00, 0x00, 0, NULL}
 };
 static DEV_DEF devDef =
@@ -176,10 +177,25 @@ static UINT32 find_sample(c140_state *info, UINT32 adrs, UINT8 bank, int voice)
 	return 0;
 }
 
+INLINE UINT8 c140_keyon_status_read(c140_state *info, UINT16 offset)
+{
+	//m_stream->update();
+	C140_VOICE const *v = &info->voi[offset >> 4];
+
+	// suzuka 8 hours and final lap games read from here, expecting bit 6 to be an in-progress sample flag.
+	// four trax also expects bit 4 high for some specific channels to make engine noises to work properly
+	// (sounds kinda bogus when player crashes in an object and jump spin, needs real HW verification)
+	return (v->key ? 0x40 : 0x00) | (info->REG[offset] & 0x3f);
+}
+
 static UINT8 c140_r(void *chip, UINT16 offset)
 {
 	c140_state *info = (c140_state *)chip;
 	offset&=0x1ff;
+
+	if ((offset & 0xf) == 0x5 && offset < 0x180)
+		return c140_keyon_status_read(info, offset);
+
 	return info->REG[offset];
 }
 
@@ -322,11 +338,11 @@ static void c140_update(void *param, UINT32 samples, DEV_SMPL **outputs)
 					}
 
 					/* Caclulate the sample value */
-					dt=((v->dltdt*v->ptoffset)>>16)+v->prevdt;
+					dt=(INT32)(((INT64)v->dltdt*v->ptoffset)>>16)+v->prevdt;
 
 					/* Write the data to the sample buffers */
-					lmix[j]+=(dt*vreg->volume_left)>>8;
-					rmix[j]+=(dt*vreg->volume_right)>>8;
+					lmix[j]+=(dt*vreg->volume_left)>>9;
+					rmix[j]+=(dt*vreg->volume_right)>>9;
 				}
 			}
 			else
@@ -361,11 +377,11 @@ static void c140_update(void *param, UINT32 samples, DEV_SMPL **outputs)
 					}
 
 					/* Caclulate the sample value */
-					dt=((v->dltdt*v->ptoffset)>>16)+v->prevdt;
+					dt=(INT32)(((INT64)v->dltdt*v->ptoffset)>>16)+v->prevdt;
 
 					/* Write the data to the sample buffers */
-					lmix[j]+=(dt*vreg->volume_left)>>8;
-					rmix[j]+=(dt*vreg->volume_right)>>8;
+					lmix[j]+=(dt*vreg->volume_left)>>9;
+					rmix[j]+=(dt*vreg->volume_right)>>9;
 				}
 			}
 		}

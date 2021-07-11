@@ -67,9 +67,6 @@
 
 ***************************************************************************/
 
-#ifdef _DEBUG
-#include <stdio.h>
-#endif
 #include <stdlib.h>
 #include <string.h>	// for memset
 
@@ -97,6 +94,7 @@ static void saa1099m_set_mute_mask(void *info, UINT32 MuteMask);
 static DEVDEF_RWFUNC devFunc[] =
 {
 	{RWF_REGISTER | RWF_WRITE, DEVRW_A8D8, 0, saa1099m_write},
+	{RWF_CHN_MUTE | RWF_WRITE, DEVRW_ALL, 0, saa1099m_set_mute_mask},
 	{0x00, 0x00, 0, NULL}
 };
 DEV_DEF devDef_SAA1099_MAME =
